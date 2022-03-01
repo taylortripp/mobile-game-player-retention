@@ -1,0 +1,184 @@
+/*
+On the “financial side” of the schema,
+the query below is a summary of items, purchases,
+and [LEFT]JOIN on the two tables
+*/
+SELECT
+ COUNT(DISTINCT i.item_id) AS num_of_items,
+ MAX(i.price) AS max_price,
+ MIN(i.price) AS min_price,
+ COUNT(purch.item_id) AS  total_transactions,
+ COUNT(DISTINCT purch.player_id) AS num_of_distinct_shoppers,
+ ROUND(CAST(SUM(i.price) AS numeric), 2) AS total_sales
+FROM
+ `new-project-337501.sql_project.purchase_info` purch
+ LEFT JOIN
+   `new-project-337501.sql_project.item_info` i
+     ON purch.item_id = i.item_id;
+________________
+
+
+/*
+On the “interaction side” of the schema,
+the query below is a summary of players, matches,
+and [LEFT]JOIN on the two tables
+*/
+SELECT
+ COUNT(DISTINCT p.player_id) AS total_players,
+ COUNT(DISTINCT m.player_id) AS total_matched_players,
+ COUNT(DISTINCT p.player_id) - COUNT(DISTINCT m.player_id) AS total_unmatched_players,
+ COUNT(DISTINCT m.match_id) AS total_matches,
+ ROUND(COUNT(DISTINCT m.match_id) / COUNT(DISTINCT p.player_id), 1) AS avg_matches_per_player
+FROM
+ `new-project-337501.sql_project.player_info` p
+ LEFT JOIN
+   `new-project-337501.sql_project.matches_info` m
+     ON p.player_id = m.player_id;
+
+
+________________
+
+
+/* 
+ * Retrieves information required to calculate the retained player by joining the matches_info table with the player_info table.
+ * It takes a max of when the player last played and then sorts it by our retention metric so we calculate fractional retention.
+ */
+SELECT
+  joined as date_joined,
+  total_joined,
+  retained_players,
+  ROUND((retained_players/total_joined) * 100, 2) AS fractional_retention
+FROM ( -- count how many people were retained
+  SELECT 
+    joined,
+    COUNT(player_id) AS total_joined,
+    SUM (retention_status) AS retained_players
+  FROM ( 
+    SELECT
+        m.player_id,
+        p.joined,
+        CASE 
+        WHEN (MAX (m.day) - p.joined ) > 29
+        THEN 1
+        ELSE 0
+        END AS retention_status -- showing as 1 and zero so we can count who was retained
+    FROM
+        `new-project-337501.sql_project.matches_info` m
+    RIGHT JOIN
+        `new-project-337501.sql_project.player_info` p
+        ON
+        m.player_id = p.player_id
+    GROUP BY
+        m.player_id,
+        p.joined )  
+  GROUP BY
+    joined
+  ORDER BY 
+    joined );
+
+
+________________
+
+
+/*
+The query below was used to create a table that includes
+-> day of game's lifespan,
+-> the total number of players that joined on that day,
+-> the number of players that ended up being retained that joined on the given day, and
+-> fractional retention (presented as a percentage for easier reading)
+This allows for insight into interest/engagement over the game's lifespan.
+*/
+SELECT
+ joined as date_joined,
+ total_joined,
+ retained_players,
+ ROUND((retained_players/total_joined)*100,2)  AS fractional_retention
+FROM ( -- now count how many people were retained
+ SELECT
+   joined,
+   COUNT(player_id) AS total_joined,
+   SUM (retained_status) AS retained_players
+ FROM (
+   SELECT
+       m.player_id,
+       p.joined,
+       CASE
+       WHEN (MAX (m.day) - p.joined ) > 29
+       THEN 1
+       ELSE 0
+       END AS retained_status -- showing as 1 and zero so we can count who was retained later
+   FROM
+       `new-project-337501.sql_project.matches_info` m
+   RIGHT JOIN
+       `new-project-337501.sql_project.player_info` p
+       ON
+       m.player_id = p.player_id
+   GROUP BY
+       m.player_id,
+       p.joined ) 
+ GROUP BY
+   joined)
+ ORDER BY date_joined
+ ;
+
+
+
+________________
+
+Business question query
+
+Average spending by location and retention status:
+
+
+--how does spending compare, geographically, between a retained player and a not-retained player?
+WITH
+retention_table AS ( --temp table categorizing players as retained or not
+ SELECT
+   p.player_id,
+   p.location,
+   p.joined,
+   CASE
+     WHEN (MAX (m.day) - p.joined ) > 29 --if player matched 30 days or more out from join date, then retained
+     THEN "Retained"
+     ELSE "Not Retained"
+     END AS retention_status
+ FROM
+   `new-project-337501.sql_project.matches_info` m
+ RIGHT JOIN --right join ensures that ALL players included, whether or not they matched (for completeness)
+   `new-project-337501.sql_project.player_info` p
+   ON
+     m.player_id = p.player_id
+ GROUP BY
+   p.player_id,
+   p.joined,
+   p.location ),
+
+
+financial_table AS ( --temp table looking at total spending per player
+SELECT
+ player_id,
+ SUM(price) AS total_spending
+ FROM
+   `new-project-337501.sql_project.purchase_info` AS d
+   JOIN
+     `new-project-337501.sql_project.item_info` AS i
+     ON
+       d.item_id = i.item_id
+ GROUP BY
+   player_id)
+SELECT
+ location,
+ retention_status,
+ ROUND(SUM(total_spending), 2) AS group_revenue, --total spending per location (continent) amongst retained players (with WHERE clause)
+ COUNT(DISTINCT retention_table.player_id) AS number_in_group, --count of retained users (with help of WHERE clause) per location
+ ROUND((SUM(total_spending) / COUNT(retention_table.player_id)), 2) AS avg_spending_per_group_member --average spending per player
+FROM
+ retention_table
+LEFT JOIN  --left join to ensure that ALL players in retention table included, whether or not they made a purchase
+ financial_table
+ ON retention_table.player_id = financial_table.player_id
+GROUP BY
+ location,
+ retention_status
+ORDER BY
+ avg_spending_per_group_member DESC;
