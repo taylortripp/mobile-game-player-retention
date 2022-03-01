@@ -4,7 +4,7 @@ In this scenario, we had been hired by a mobile game company to gain insights on
 
 To start, building a table schema helped visualize where certain elements existed, where records could be connected, and how more elaborate questions could be answered in the deeper levels of analysis.
 
-![Table schema outlining unique and common keys.](https://i.imgur.com/Q0B8exB.png)
+![Table schema outlining unique and common keys.](./assets/sql_project_schema.png)
 
 
 
@@ -14,7 +14,7 @@ Beginning with a phase of exploratory data analysis (EDA), the "financial" side 
 * number of transactions
 * total sales
 
-!["Financial" end of schema.](https://i.imgur.com/w6BLXOi.png)
+!["Financial" end of schema.](./assets/financial_side_table_schema.png)
 
 
 Similarly, on the "interaction" side of the schema revealed:
@@ -23,7 +23,7 @@ Similarly, on the "interaction" side of the schema revealed:
 * number of unmatched
 * average matches per player
 
-!["Interaction" end of schema.](https://i.imgur.com/Z0zdxiu.png)
+!["Interaction" end of schema.](./assets/interaction_side_table_schema.png)
 
 
 These numbers, to have on hand, served as quick references for quality assurance checks throughout the analysis.
@@ -45,17 +45,17 @@ The second column used a count of the number of distinct `player_id` s, grouped 
 Finally, and perhaps more intuitively, the rightmost column shows the fractional retention over time (actually shown as a percentage, rounded to two decimal places), which can be translated as, “*from all that joined on day 2, how many stuck around [for at least 30 days]*?”. 
 
 The first ten days of the game's lifespan of the query results are shown below:
-![](https://i.imgur.com/pEeKiyV.png)
+![First ten days of retention table.](./assets/retention_table.png)
 
 
 *Retention chart* showing the number of players that joined each day, in addition to the number of players that were eventually retained (based on their join date). In other words, *did a given player play a match 30 days after they joined?* A player is either retained or not retained with respect to this retention metric.
-![](https://i.imgur.com/usGhwiH.png)
+![Retention chart over time.](./assets/retention_chart.png)
 
 From the *retention chart* above we note that the day of fewest joins was day 127 (27 joins), the day of greatest joins was day 55 (200 joins).
 
 Similarly, looking at the *fractional retention chart* below, we can see that retention, on average, stayed above 70% throughout the course of the game's lifespan.
 
-![](https://i.imgur.com/6N3YwRP.png)
+![Fractional retention over time.](./assets/fractional_retentional_chart.png)
 
 
 The day of lowest fractional retention was day 158 (60%), while the day of greatest fractional retention was day 130 (84.15%).
@@ -91,9 +91,9 @@ Finally, we joined the`retention_table` and the `financial_table` using a `LEFT 
 
 The result of our query is shown below, ordered in descending amount of average spending per group member:
 
-![](https://i.imgur.com/lVEsYaB.png)
+![Average spending per group member, table.](./assets/avg_spend_per_group.png)
 
 From this table, we can see that the *Oceania & Not Retained* group spent the most, on average, while the *North America & Retained* group spent the least, on average. Additionally, though it is curious that the *Not Retained* groups all spent more, on average, than their *Retained* counterparts, it should be reassuring to note that, within each location, there were more retained players than not retained. 
 
 
-![](https://i.imgur.com/zTvv6tP.png)
+![Average spending per group member, chart.](./assets/average_player_spending.png)
