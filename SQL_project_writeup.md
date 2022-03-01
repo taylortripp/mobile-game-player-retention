@@ -97,3 +97,9 @@ From this table, we can see that the *Oceania & Not Retained* group spent the mo
 
 
 ![Average spending per group member, chart.](./assets/average_player_spending.png)
+
+## Conclusions and Insights
+
+After analyzing the game data across all four tables, the following conclusions can be drawn:
+* While retention did not seem to increase significantly over the game's lifespan, with a fractional retention rate averaging around 70% over 365 days, interest and long-term engagement is strong.
+* On average, non-retained players spend more than retained players, though the number of individual players in a continent's "retained" group is much greater than its "not retained" group.
